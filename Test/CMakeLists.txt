@@ -21,6 +21,7 @@ set(TESTS
 	ConstantString.m
 	Category.m
 	ExceptionTest.m
+	ExceptionTest_arc.m
 	FastARC.m
 	FastARCPool.m
 	FastRefCount.m
@@ -53,6 +54,13 @@ set(TESTS
 	setSuperclass.m
 	UnexpectedException.m
 )
+
+if (ENABLE_OBJCXX)
+	list(APPEND TESTS
+	ExceptionTestObjCXX.mm
+	ExceptionTestObjCXX_arc.mm
+	)
+endif()
 
 set(ENABLE_ALL_OBJC_ARC_TESTS On)
 

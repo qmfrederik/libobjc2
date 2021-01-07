@@ -612,7 +612,7 @@ BEGIN_PERSONALITY_FUNCTION(__gnustep_objcxx_personality_v0)
 }
 
 #if defined(__SEH__) && !defined(__USING_SJLJ_EXCEPTIONS__)
-EXCEPTION_DISPOSITION
+OBJC_PUBLIC EXCEPTION_DISPOSITION
 __gnu_objc_personality_seh0(PEXCEPTION_RECORD ms_exc, void *this_frame,
 		PCONTEXT ms_orig_context, PDISPATCHER_CONTEXT ms_disp)
 {

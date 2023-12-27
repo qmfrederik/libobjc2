@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 
+set(CMAKE_C_COMPILER "clang")
+set(CMAKE_CXX_COMPILER "clang++")
+
 project(libobjc)
 enable_language(ASM)
 
@@ -187,6 +190,8 @@ set(ENABLE_OBJCXX true CACHE BOOL
 set(CXXRT_IS_STDLIB false)
 
 add_library(objc SHARED ${libobjc_C_SRCS} ${libobjc_ASM_SRCS} ${libobjc_OBJC_SRCS})
+
+target_compile_options(objc PRIVATE -Wno-gnu-folding-constant)
 
 if (ENABLE_OBJCXX)
 	message(STATUS "Testing C++ interop")

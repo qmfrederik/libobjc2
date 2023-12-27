@@ -8,9 +8,13 @@
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
+#ifndef _WIN32
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#else
+#include "safewindows.h"
+#endif
 #include "objc/runtime.h"
 #include "objc/blocks_runtime.h"
 #include "blocks_runtime.h"
@@ -31,6 +35,47 @@ void __clear_cache(void* start, void* end);
 /* QNX needs a special header for asprintf() */
 #ifdef __QNXNTO__
 #include <nbutil.h>
+#endif
+
+#ifdef _WIN32
+#ifndef PROT_READ
+#define PROT_READ  0x4
+#endif
+
+#ifndef PROT_WRITE
+#define PROT_WRITE 0x2
+#endif
+
+#ifndef PROT_EXEC
+#define PROT_EXEC  0x1
+#endif
+
+static int mprotect(void *buffer, size_t len, int prot)
+{
+	DWORD oldProt = 0, newProt = PAGE_NOACCESS;
+	// Windows doesn't offer values that can be ORed together...
+	if ((prot & PROT_WRITE))
+	{
+		// promote to readwrite as there's no writeonly protection constant
+		newProt = PAGE_READWRITE;
+	}
+	else if ((prot & PROT_READ))
+	{
+		newProt = PAGE_READONLY;
+	}
+
+	if ((prot & PROT_EXEC))
+	{
+		switch (newProt)
+		{
+			case PAGE_NOACCESS: newProt = PAGE_EXECUTE; break;
+			case PAGE_READONLY: newProt = PAGE_EXECUTE_READ; break;
+			case PAGE_READWRITE: newProt = PAGE_EXECUTE_READWRITE; break;
+		}
+	}
+
+	return 0 != VirtualProtect(buffer, len, newProt, &oldProt);
+}
 #endif
 
 #define PAGE_SIZE 4096
@@ -108,7 +153,11 @@ static id invalid(id self, SEL _cmd)
 static struct trampoline_set *alloc_trampolines(char *start, char *end)
 {
 	struct trampoline_set *metadata = calloc(1, sizeof(struct trampoline_set));
-	metadata->buffers = valloc(sizeof(struct trampoline_buffers));
+#if _WIN32
+	metadata->buffers = VirtualAlloc(NULL, sizeof(struct trampoline_buffers), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
+	metadata->buffers = mmap(NULL, sizeof(struct trampoline_buffers), PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+#endif
 	for (int i=0 ; i<HEADERS_PER_PAGE ; i++)
 	{
 		metadata->buffers->headers[i].fnptr = (void(*)(void))invalid;

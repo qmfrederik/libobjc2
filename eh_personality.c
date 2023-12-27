@@ -469,9 +469,9 @@ static inline _Unwind_Reason_Code internal_objc_personality(int version,
 		}
 	}
 
-	_Unwind_SetIP(context, (unsigned long)action.landing_pad);
+	_Unwind_SetIP(context, (uintptr_t)action.landing_pad);
 	_Unwind_SetGR(context, __builtin_eh_return_data_regno(0), 
-			(unsigned long)(isNew ? exceptionObject : object));
+			(uintptr_t)(isNew ? exceptionObject : object));
 	_Unwind_SetGR(context, __builtin_eh_return_data_regno(1), selector);
 
 	DEBUG_LOG("Installing context, selector %d\n", (int)selector);

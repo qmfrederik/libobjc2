@@ -1,4 +1,4 @@
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__MINGW64__)
 #include "safewindows.h"
 static unsigned sleep(unsigned seconds)
 {

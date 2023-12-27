@@ -3,10 +3,10 @@
 
 #pragma push_macro("BOOL")
 
-#ifdef BOOL
-#undef BOOL
+// Define _NO_BOOL_TYPEDEF so minwindef.h doesn't re-declare BOOL
+#ifndef _NO_BOOL_TYPEDEF
+#define _NO_BOOL_TYPEDEF
 #endif
-#define BOOL _WINBOOL
 
 #include <Windows.h>
 

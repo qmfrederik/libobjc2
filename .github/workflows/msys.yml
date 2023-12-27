@@ -1,0 +1,23 @@
+name: MSYS CI
+on: [push]
+jobs:
+  ucrt64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-clang
+      - run: git config --global core.autocrlf input
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build .

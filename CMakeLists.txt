@@ -7,6 +7,7 @@ project(libobjc)
 enable_language(ASM)
 
 INCLUDE (CheckCXXSourceCompiles)
+include(GNUInstallDirs)
 
 set(CMAKE_C_FLAGS_DEBUG "-g -O0 -fno-inline ${CMAKE_C_FLAGS_DEBUG}")
 set(CMAKE_C_FLAGS_RELEASE "-O3 ${CMAKE_C_FLAGS_RELEASE}")
@@ -294,50 +295,14 @@ endif ()
 # Installation
 #
 
-
-find_program(GNUSTEP_CONFIG gnustep-config)
-if (GNUSTEP_CONFIG)
-	EXEC_PROGRAM(gnustep-config
-		ARGS "--installation-domain-for=libobjc2"
-		OUTPUT_VARIABLE DEFAULT_INSTALL_TYPE)
-endif ()
-
-
-# If we have GNUstep environment variables, then default to installing in the
-# GNUstep local environment.
-if (DEFAULT_INSTALL_TYPE)
-else ()
-	set(DEFAULT_INSTALL_TYPE "NONE")
-endif ()
-
-if (NOT CMAKE_INSTALL_LIBDIR)
-	set(CMAKE_INSTALL_LIBDIR lib)
-endif ()
-
-
-set(GNUSTEP_INSTALL_TYPE ${DEFAULT_INSTALL_TYPE} CACHE STRING
-	"GNUstep installation type.  Options are NONE, SYSTEM, NETWORK or LOCAL.")
-if (${GNUSTEP_INSTALL_TYPE} STREQUAL "NONE")
-	SET(LIB_INSTALL_PATH "${CMAKE_INSTALL_LIBDIR}" CACHE STRING
-		"Subdirectory of the root prefix where libraries are installed.")
-	SET(HEADER_INSTALL_PATH "include")
-else ()
-	EXEC_PROGRAM(gnustep-config
-		ARGS "--variable=GNUSTEP_${GNUSTEP_INSTALL_TYPE}_LIBRARIES"
-		OUTPUT_VARIABLE LIB_INSTALL_PATH)
-	EXEC_PROGRAM(gnustep-config
-		ARGS "--variable=GNUSTEP_${GNUSTEP_INSTALL_TYPE}_HEADERS"
-		OUTPUT_VARIABLE HEADER_INSTALL_PATH)
-endif ()
-message(STATUS "GNUstep install type set to ${GNUSTEP_INSTALL_TYPE}")
-
 install(TARGETS ${INSTALL_TARGETS}
-	LIBRARY DESTINATION ${LIB_INSTALL_PATH}
-	ARCHIVE DESTINATION ${LIB_INSTALL_PATH})
+	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(FILES ${libobjc_HDRS}
-	DESTINATION "${HEADER_INSTALL_PATH}/${INCLUDE_DIRECTORY}")
+	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${INCLUDE_DIRECTORY}")
 install(FILES ${libBlocksRuntime_COMPATIBILITY_HDRS}
-	DESTINATION "${HEADER_INSTALL_PATH}")
+	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/")
 
 set(CPACK_GENERATOR TGZ CACHE STRING
 	"Installer types to generate.  Sensible options include TGZ, RPM and DEB")

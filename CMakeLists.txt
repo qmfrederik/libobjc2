@@ -114,11 +114,11 @@ set(libobjc_CXX_SRCS
 	selector_table.cc
 	)
 # Windows does not use DWARF EH
-if (WIN32)
+if (MSVC)
 	list(APPEND libobjc_CXX_SRCS eh_win32_msvc.cc)
 else ()
 	list(APPEND libobjc_C_SRCS eh_personality.c)
-endif (WIN32)
+endif (MSVC)
 
 if (NOT EXISTS "${CMAKE_SOURCE_DIR}/third_party/robin-map/include/tsl/robin_map.h")
 	message(FATAL_ERROR "Git submodules not present, please run:\n\n"
@@ -129,7 +129,7 @@ if (NOT EXISTS "${CMAKE_SOURCE_DIR}/third_party/robin-map/include/tsl/robin_map.
 endif ()
 
 
-if (WIN32)
+if (MSVC)
 	set(OLD_ABI_COMPAT_DEFAULT false)
 else()
 	set(OLD_ABI_COMPAT_DEFAULT true)
@@ -207,7 +207,7 @@ endif()
 
 
 
-if (WIN32)
+if (MSVC)
 	message(STATUS "Using MSVC-compatible exception model")
 else ()
 	separate_arguments(EH_PERSONALITY_FLAGS NATIVE_COMMAND ${CMAKE_CXX_FLAGS})
@@ -231,7 +231,7 @@ target_sources(objc PRIVATE ${libobjc_CXX_SRCS})
 include(FindThreads)
 target_link_libraries(objc Threads::Threads)
 # Link against ntdll.dll for RtlRaiseException
-if (WIN32)
+if (MSVC)
 	target_link_libraries(objc ntdll.dll)
 endif()
 

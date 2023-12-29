@@ -10,3 +10,8 @@
 #define TYPE_DIRECTIVE(symbol, symboltype)
 #endif
 
+#if defined(_MSC_VER) && defined(__i386__)
+#define EXPORT_SYMBOL(symbol) .ascii  " /EXPORT:_ " #symbol
+#else
+#define EXPORT_SYMBOL(symbol) .ascii  " /EXPORT:" #symbol
+#endif

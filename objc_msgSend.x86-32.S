@@ -126,13 +126,7 @@ CDECL(objc_msgSend_stret):
 
 #ifdef _WIN32
         .section        .drectve,"yn"
-#ifdef _MSC_VER
-        .ascii  " /EXPORT:_objc_msgSend"
-        .ascii  " /EXPORT:_objc_msgSend_stret"
-        .ascii  " /EXPORT:_objc_msgSend_fpret"
-#else
-        .ascii  " /EXPORT:objc_msgSend"
-        .ascii  " /EXPORT:objc_msgSend_stret"
-        .ascii  " /EXPORT:objc_msgSend_fpret"
-#endif
+		EXPORT_SYMBOL(objc_msgSend)
+		EXPORT_SYMBOL(objc_msgSend_stret)
+		EXPORT_SYMBOL(objc_msgSend_fpret)
 #endif

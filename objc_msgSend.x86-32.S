@@ -37,7 +37,7 @@
 	test  %eax, %eax
 	jz    5f                             # Nil slot - invoke some kind of forwarding mechanism
 	mov   SLOT_OFFSET(%eax), %ecx
-#ifdef _MSC_VER
+#ifdef _WIN32
 	call  *CDECL(__guard_check_icall_fptr)
 #endif
 	jmp   *%ecx

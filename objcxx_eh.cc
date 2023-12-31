@@ -448,7 +448,11 @@ PRIVATE void cxx_throw()
  */
 extern "C"
 PRIVATE
+#ifndef __SEH__
 BEGIN_PERSONALITY_FUNCTION(test_eh_personality)
+#else
+BEGIN_PERSONALITY_FUNCTION(test_eh_personality_internal)
+#endif
 	// Don't bother with a mutex here.  It doesn't matter if two threads set
 	// these values at the same time.
 	if (!done_setup)

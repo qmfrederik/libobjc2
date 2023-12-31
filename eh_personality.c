@@ -8,6 +8,15 @@
 #include "class.h"
 #include "objcxx_eh.h"
 
+#if defined(__SEH__)
+#include <windows.h>
+#include <winnt.h>
+
+EXCEPTION_DISPOSITION _GCC_specific_handler(PEXCEPTION_RECORD, void *, PCONTEXT,
+                                            PDISPATCHER_CONTEXT, void *);
+DECLARE_PERSONALITY_FUNCTION(test_eh_personality_internal);
+#endif
+
 #ifndef DEBUG_EXCEPTIONS
 #define DEBUG_LOG(...)
 #else
@@ -404,10 +413,13 @@ static inline _Unwind_Reason_Code internal_objc_personality(int version,
 	void *object = NULL;
 
 #ifndef NO_OBJCXX
+#ifndef __SEH__
 	if (cxx_exception_class == 0)
 	{
+		// FIXME: This is currently broken with MinGW
 		test_cxx_eh_implementation();
 	}
+#endif
 
 	if (exceptionClass == cxx_exception_class)
 	{
@@ -602,6 +614,24 @@ BEGIN_PERSONALITY_FUNCTION(__gnustep_objcxx_personality_v0)
 #endif
 	return CALL_PERSONALITY_FUNCTION(__gxx_personality_v0);
 }
+
+#if defined(__SEH__)
+OBJC_PUBLIC EXCEPTION_DISPOSITION
+__gnu_objc_personality_seh0(PEXCEPTION_RECORD ms_exc, void *this_frame,
+		PCONTEXT ms_orig_context, PDISPATCHER_CONTEXT ms_disp)
+{
+	return _GCC_specific_handler(ms_exc, this_frame, ms_orig_context, ms_disp,
+			__gnustep_objc_personality_v0);
+}
+
+PRIVATE EXCEPTION_DISPOSITION
+test_eh_personality(PEXCEPTION_RECORD ms_exc, void *this_frame,
+		PCONTEXT ms_orig_context, PDISPATCHER_CONTEXT ms_disp)
+{
+	return _GCC_specific_handler(ms_exc, this_frame, ms_orig_context, ms_disp,
+			test_eh_personality_internal);
+}
+#endif
 
 OBJC_PUBLIC id objc_begin_catch(struct _Unwind_Exception *exceptionObject)
 {

@@ -11,7 +11,6 @@ endif ()
 
 # List of single-file tests.
 set(TESTS
-	alias.m
 	alignTest.m
 	AllocatePair.m
 	AssociatedObject.m
@@ -20,19 +19,16 @@ set(TESTS
 	BlockTest_arc.m
 	ConstantString.m
 	Category.m
-	ExceptionTest.m
 	FastARC.m
 	FastARCPool.m
 	FastRefCount.m
 	Forward.m
 	ManyManySelectors.m
-	NestedExceptions.m
 	PropertyAttributeTest.m
 	ProtocolExtendedProperties.m
 	PropertyIntrospectionTest.m
 	ProtocolCreation.m
 	ResurrectInDealloc_arc.m
-	RuntimeTest.m
 	SuperMethodMissing.m
 	WeakBlock_arc.m
 	WeakRefLoad.m
@@ -42,9 +38,7 @@ set(TESTS
 	ivar_atomic.m
 	IVarOverlap.m
 	IVarSuperclassOverlap.m
-	objc_msgSend.m
 	msgInterpose.m
-	NilException.m
 	MethodArguments.m
 	zeroSizedIVar.m
 	exchange.m
@@ -79,8 +73,18 @@ if (ENABLE_ALL_OBJC_ARC_TESTS)
 	)
 endif()
 
-# UnexpectedException test currently fails on ARM and needs to be fixed
-if(NOT ARCHITECTURE MATCHES "^(arm|aarch64)")
+if (NOT MINGW)
+	list(APPEND TESTS
+		alias.m
+		ExceptionTest.m
+		NestedExceptions.m
+		RuntimeTest.m
+		objc_msgSend.m
+		NilException.m)
+endif()
+
+# UnexpectedException test currently fails on ARM and MINGW and needs to be fixed
+if(NOT ARCHITECTURE MATCHES "^(arm|aarch64)" AND NOT MINGW)
     list(APPEND TESTS UnexpectedException.m)
 endif()
 
@@ -159,9 +163,11 @@ foreach(TEST_SOURCE ${NEW_TESTS})
 endforeach()
 
 # Tests that are more than a single file.
-addtest_variants("CXXExceptions" "CXXException.m;CXXException.cc" true)
+if (NOT MINGW)
+	addtest_variants("CXXExceptions" "CXXException.m;CXXException.cc" true)
+endif ()
 addtest_variants("ForwardDeclareProtocolAccess" "ForwardDeclareProtocolAccess.m;ForwardDeclareProtocol.m" true)
-if (ENABLE_OBJCXX)
+if (ENABLE_OBJCXX AND NOT MINGW)
 	addtest_variants(ObjCXXEHInterop "ObjCXXEHInterop.mm;ObjCXXEHInterop.m" true)
 	addtest_variants(ObjCXXEHInteropTwice "ObjCXXEHInteropTwice.mm" true)
 	if (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL Clang)

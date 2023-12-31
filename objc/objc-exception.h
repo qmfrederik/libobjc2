@@ -26,6 +26,12 @@ void objc_exception_throw(id object);
 OBJC_PUBLIC
 objc_uncaught_exception_handler objc_setUncaughtExceptionHandler(objc_uncaught_exception_handler handler);
 
+OBJC_PUBLIC id objc_begin_catch(struct _Unwind_Exception *exceptionObject);
+
+OBJC_PUBLIC void objc_end_catch(void);
+
+OBJC_PUBLIC void test_cxx_eh_implementation();
+
 #ifdef __cplusplus
 }
 #endif

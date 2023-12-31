@@ -21,6 +21,15 @@
 #define __builtin_unreachable abort
 #endif
 
+#ifdef __MINGW32__
+#include <windows.h>
+#include <winnt.h>
+
+EXCEPTION_DISPOSITION _GCC_specific_handler(PEXCEPTION_RECORD, void *, PCONTEXT,
+                                            PDISPATCHER_CONTEXT, void *);
+DECLARE_PERSONALITY_FUNCTION(test_eh_personality_internal);
+#endif
+
 void test_cxx_eh_implementation();
 /**
  * The Itanium C++ public structure for in-flight exception status.
@@ -406,7 +415,9 @@ static inline _Unwind_Reason_Code internal_objc_personality(int version,
 #ifndef NO_OBJCXX
 	if (cxx_exception_class == 0)
 	{
+#ifndef __MINGW32__
 		test_cxx_eh_implementation();
+#endif
 	}
 
 	if (exceptionClass == cxx_exception_class)
@@ -560,20 +571,31 @@ static inline _Unwind_Reason_Code internal_objc_personality(int version,
 	return _URC_INSTALL_CONTEXT;
 }
 
-OBJC_PUBLIC
-BEGIN_PERSONALITY_FUNCTION(__gnu_objc_personality_v0)
-	return internal_objc_personality(version, actions, exceptionClass,
-			exceptionObject, context, NO);
-}
-
-OBJC_PUBLIC
-BEGIN_PERSONALITY_FUNCTION(__gnustep_objc_personality_v0)
+#ifdef __MINGW32__
+BEGIN_PERSONALITY_FUNCTION(__gnustep_objc_personality_v0_internal)
 	return internal_objc_personality(version, actions, exceptionClass,
 			exceptionObject, context, YES);
 }
 
+OBJC_PUBLIC EXCEPTION_DISPOSITION
+__gnustep_objc_personality_v0(PEXCEPTION_RECORD ms_exc, void *this_frame,
+		PCONTEXT ms_orig_context, PDISPATCHER_CONTEXT ms_disp)
+{
+	return _GCC_specific_handler(ms_exc, this_frame, ms_orig_context, ms_disp,
+			__gnustep_objc_personality_v0_internal);
+}
+#else
+OBJC_PUBLIC
+BEGIN_PERSONALITY_FUNCTION(__gnustep_objc_personality_v0)
+	abort();
+	return internal_objc_personality(version, actions, exceptionClass,
+			exceptionObject, context, YES);
+}
+#endif
+
 OBJC_PUBLIC
 BEGIN_PERSONALITY_FUNCTION(__gnustep_objcxx_personality_v0)
+	abort();
 #ifndef NO_OBJCXX
 	if (cxx_exception_class == 0)
 	{

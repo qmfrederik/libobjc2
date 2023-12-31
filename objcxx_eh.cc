@@ -468,7 +468,9 @@ BEGIN_PERSONALITY_FUNCTION(test_eh_personality)
  * personality function, allowing us to inspect a C++ exception that is in a
  * known state.
  */
-extern "C" void test_cxx_eh_implementation()
+extern "C"
+OBJC_PUBLIC
+void test_cxx_eh_implementation()
 {
 	if (done_setup)
 	{

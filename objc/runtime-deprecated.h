@@ -33,6 +33,7 @@ void objc_free(void *mem);
 __attribute__((deprecated))
 id objc_get_class(const char *name);
 
+OBJC_PUBLIC
 __attribute__((deprecated))
 id objc_lookup_class(const char *name);
 

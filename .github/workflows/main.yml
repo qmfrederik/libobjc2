@@ -181,8 +181,13 @@ jobs:
       matrix:
         # Build each combination of OS and release/debug variants
         os: [ windows-2019 ]
-        msystem: [ ucrt ]
+        msystem: [ ucrt64, mingw64 ]
         build-type: [ Release, Debug ]
+        include:
+          - msystem: ucrt64
+            package-prefix: ucrt-x86_64
+          - msystem: mingw64
+            package-prefix: x86_64
       # Don't abort runners if a single one fails
       fail-fast: false
     runs-on: ${{ matrix.os }}
@@ -194,9 +199,9 @@ jobs:
     - uses: actions/checkout@v3
     - uses: msys2/setup-msys2@v2
       with:
-        msystem: ${{ matrix.msystem }}64
+        msystem: ${{ matrix.msystem }}
         update: true
-        install: git mingw-w64-${{ matrix.msystem }}-x86_64-clang mingw-w64-${{ matrix.msystem }}-x86_64-lld mingw-w64-${{ matrix.msystem }}-x86_64-cmake
+        install: git mingw-w64-${{ matrix.package-prefix }}-clang mingw-w64-${{ matrix.package-prefix }}-lld mingw-w64-${{ matrix.package-prefix }}-cmake
     - name: Configure CMake
       run: |        
         mkdir build

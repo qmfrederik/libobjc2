@@ -21,6 +21,7 @@ endif()
 enable_language(OBJC OBJCXX)
 
 INCLUDE (CheckCXXSourceCompiles)
+INCLUDE (CheckFunctionExists)
 
 set(libobjc_VERSION 4.6)
 
@@ -220,6 +221,8 @@ else ()
 	list(APPEND libobjc_CXX_SRCS objcxx_eh.cc)
 	# Find libm for linking, as some versions of libc++ don't link against it
 	find_library(M_LIBRARY m)
+
+	check_function_exists(__gxx_personality_v0 HAVE_gxx_personality_v0)
 endif ()
 
 add_library(objc SHARED ${libobjc_C_SRCS} ${libobjc_ASM_SRCS} ${libobjc_OBJC_SRCS} ${libobjc_OBJCXX_SRCS} ${libobjc_ASM_OBJS})

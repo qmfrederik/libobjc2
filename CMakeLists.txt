@@ -21,7 +21,6 @@ endif()
 enable_language(OBJC OBJCXX)
 
 INCLUDE (CheckCXXSourceCompiles)
-INCLUDE (FetchContent)
 
 set(libobjc_VERSION 4.6)
 
@@ -121,16 +120,14 @@ else ()
 	list(APPEND libobjc_C_SRCS eh_personality.c)
 endif (WIN32 AND NOT MINGW)
 
-find_package(tsl-robin-map)
+if (NOT EXISTS "${CMAKE_SOURCE_DIR}/third_party/robin-map/include/tsl/robin_map.h")
+	message(FATAL_ERROR "Git submodules not present, please run:\n\n"
+						" $ git submodule init && git submodule update\n\n"
+						"If you did not checkout via git, you will need to"
+						"fetch the submodule's contents from"
+						"https://github.com/Tessil/robin-map/")
+endif ()
 
-if (NOT tls-robin-map_FOUND)
-	FetchContent_Declare(
-		robinmap
-		GIT_REPOSITORY https://github.com/Tessil/robin-map/
-		GIT_TAG        v1.2.1)
-
-	FetchContent_MakeAvailable(robinmap)
-endif()
 
 if (WIN32 AND NOT MINGW)
 	set(OLD_ABI_COMPAT_DEFAULT false)
@@ -249,7 +246,6 @@ if (WIN32 AND NOT MINGW)
 	target_link_libraries(objc ntdll.dll)
 endif()
 
-target_link_libraries(objc tsl::robin_map)
 
 set_target_properties(objc PROPERTIES
 	LINKER_LANGUAGE C

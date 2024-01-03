@@ -116,6 +116,9 @@ set(libobjc_CXX_SRCS
 # Windows does not use DWARF EH, except when using the GNU ABI (MinGW)
 if (WIN32 AND NOT MINGW)
 	list(APPEND libobjc_CXX_SRCS eh_win32_msvc.cc)
+elseif(MINGW)
+	# list(APPEND libobjc_C_SRCS eh_gcc.c)
+	list(APPEND libobjc_C_SRCS eh_apple.cc)
 else ()
 	list(APPEND libobjc_C_SRCS eh_personality.c)
 endif (WIN32 AND NOT MINGW)
@@ -136,7 +139,7 @@ else()
 endif()
 
 if (MINGW)
-	set(ENABLE_OBJCXX_DEFAULT false)
+	set(ENABLE_OBJCXX_DEFAULT true)
 else()
 	set(ENABLE_OBJCXX_DEFAULT true)
 endif()
@@ -162,9 +165,9 @@ add_compile_definitions($<$<BOOL:${TYPE_DEPENDENT_DISPATCH}>:TYPE_DEPENDENT_DISP
 add_compile_definitions($<$<BOOL:${ENABLE_TRACING}>:WITH_TRACING=1>)
 add_compile_definitions($<$<BOOL:${DEBUG_ARC_COMPAT}>:DEBUG_ARC_COMPAT>)
 
-if (ENABLE_OBJCXX AND MINGW)
-	message(FATAL_ERROR "Objective-C++ is not supported on MinGW.")
-endif()
+# if (ENABLE_OBJCXX AND MINGW)
+# 	message(FATAL_ERROR "Objective-C++ is not supported on MinGW.")
+# endif()
 
 if (OLDABI_COMPAT)
 	list(APPEND libobjc_C_SRCS legacy.c abi_version.c statics_loader.c)
@@ -219,13 +222,16 @@ endif()
 
 if (WIN32 AND NOT MINGW)
 	message(STATUS "Using MSVC-compatible exception model")
+elseif (MINGW)
+	message(STATUS "Using mingw-compatible exception model")
 else ()
 	separate_arguments(EH_PERSONALITY_FLAGS NATIVE_COMMAND ${CMAKE_CXX_FLAGS})
 	if (CMAKE_CXX_COMPILER_TARGET)
 		list(APPEND EH_PERSONALITY_FLAGS "${CMAKE_CXX_COMPILE_OPTIONS_TARGET}${CMAKE_CXX_COMPILER_TARGET}")
 	endif ()
+
 	add_custom_command(OUTPUT eh_trampoline.S
-		COMMAND ${CMAKE_CXX_COMPILER} ARGS ${EH_PERSONALITY_FLAGS} -fPIC -S "${CMAKE_SOURCE_DIR}/eh_trampoline.cc" -o - -fexceptions -fno-inline | sed "s/__gxx_personality_v0/test_eh_personality/g" > "${CMAKE_BINARY_DIR}/eh_trampoline.S"
+		COMMAND ${CMAKE_CXX_COMPILER} ARGS ${EH_PERSONALITY_FLAGS} -fPIC -S "${CMAKE_SOURCE_DIR}/eh_trampoline.cc" -o - -fexceptions -fno-inline | sed "s/__gxx_personality_seh0/test_eh_personality/g" > "${CMAKE_BINARY_DIR}/eh_trampoline.S"
 		MAIN_DEPENDENCY eh_trampoline.cc)
 	list(APPEND libobjc_ASM_SRCS eh_trampoline.S)
 	list(APPEND libobjc_CXX_SRCS objcxx_eh.cc)

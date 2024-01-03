@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C++ Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Test/CXXExceptions.exe",
+      "cwd": "${workspaceFolder}/build",
+      "stopAtEntry": false,
+      "launchCompleteCommand": "exec-run",
+      "windows": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "c:\\tools\\msys64\\mingw64\\bin\\gdb.exe",
+        "environment": [
+          {
+            "name": "PATH",
+            "value": "${env:PATH};c:\\tools\\msys64\\mingw64\\bin\\;${workspaceFolder}\\build"
+          }
+        ]
+      },
+    }
+  ]
+}

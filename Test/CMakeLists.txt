@@ -27,6 +27,7 @@ set(TESTS
 	Forward.m
 	ManyManySelectors.m
 	NestedExceptions.m
+	NestedExceptions2.m
 	PropertyAttributeTest.m
 	ProtocolExtendedProperties.m
 	PropertyIntrospectionTest.m
@@ -97,7 +98,8 @@ set_target_properties(test_runtime_legacy PROPERTIES
 	LINKER_LANGUAGE C
 )
 
-add_library(test_runtime OBJECT Test.m)
+add_library(test_runtime SHARED Test.m)
+target_link_libraries(test_runtime objc)
 set_target_properties(test_runtime PROPERTIES
 	INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}"
 	COMPILE_FLAGS "-Xclang -fblocks -fobjc-runtime=gnustep-2.0"
@@ -134,9 +136,9 @@ endfunction(addtest_flags)
 
 function(addtest_variants TEST TEST_SOURCE LEGACY)
 	addtest_flags(${TEST} "-O0 -fobjc-runtime=gnustep-2.2 -UNDEBUG -DGS_RUNTIME_V2" "${TEST_SOURCE}")
-	target_sources(${TEST} PRIVATE $<TARGET_OBJECTS:test_runtime>)
+	target_link_libraries(${TEST} test_runtime)
 	addtest_flags("${TEST}_optimised" "-O3 -fobjc-runtime=gnustep-2.2 -UNDEBUG -DGS_RUNTIME_V2" "${TEST_SOURCE}")
-	target_sources("${TEST}_optimised" PRIVATE $<TARGET_OBJECTS:test_runtime>)
+	target_link_libraries("${TEST}_optimised" test_runtime)
 
 	# -fobjc-arc is not supported on platforms using the legacy runtime
 	if (${LEGACY} AND ${OLDABI_COMPAT} AND NOT ${TEST} MATCHES ".*_arc")

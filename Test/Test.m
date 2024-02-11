@@ -69,3 +69,28 @@
 	objc_autorelease(anObject);
 }
 @end
+
+@implementation HelperClass
+- (void)helperMethodWhichRethrows
+{
+	@autoreleasepool
+	{
+		@try
+		{
+			@throw [Test new];
+		}
+		@catch (Test* localException)
+		{
+			@throw localException;
+		}
+	}
+}
+
+- (void)helperMethodWhichThrows
+{
+	@autoreleasepool
+	{
+		@throw [Test new];
+	}
+}
+@end

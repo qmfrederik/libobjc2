@@ -48,4 +48,7 @@ __attribute__((objc_root_class))
 @interface NSAutoreleasePool : Test
 @end
 
-
+@interface HelperClass : Test
+- (void)helperMethodWhichThrows;
+- (void)helperMethodWhichRethrows;
+@end

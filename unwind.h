@@ -1,3 +1,7 @@
+#ifdef __MINWGW32__
+#error Oops
+#endif
+
 #ifdef __arm__
 #include "unwind-arm.h"
 #else

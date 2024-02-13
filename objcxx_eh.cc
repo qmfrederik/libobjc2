@@ -7,6 +7,7 @@ typedef struct objc_object* id;
 #include "visibility.h"
 #include "objc/runtime.h"
 #include "objc/objc-arc.h"
+#include "objcxx_eh_typeinfo.h"
 
 #ifndef DEBUG_EXCEPTIONS
 #define DEBUG_LOG(...)
@@ -31,12 +32,6 @@ uint64_t cxx_exception_class;
  */
 namespace __cxxabiv1
 {
-	/**
-	 * Type info for classes.  Forward declared because the GNU ABI provides a
-	 * method on all type_info objects that the dynamic the dynamic cast header
-	 * needs.
-	 */
-	struct __class_type_info;
 	/**
 	 * The C++ in-flight exception object.  We will derive the offset of fields
 	 * in this, so we do not ever actually see a concrete definition of it.
@@ -76,35 +71,6 @@ using namespace __cxxabiv1;
 
 typedef void (*unexpected_handler)();
 typedef void (*terminate_handler)();
-
-namespace std
-{
-	/**
-	 * std::type_info, containing the minimum requirements for the ABI.
-	 * Public headers on some implementations also expose some implementation
-	 * details.  The layout of our subclasses must respect the layout of the
-	 * C++ runtime library, but also needs to be portable across multiple
-	 * implementations and so should not depend on internal symbols from those
-	 * libraries.
-	 */
-	class type_info
-	{
-				public:
-				virtual ~type_info();
-				bool operator==(const type_info &) const;
-				bool operator!=(const type_info &) const;
-				bool before(const type_info &) const;
-				type_info();
-				private:
-				type_info(const type_info& rhs);
-				type_info& operator= (const type_info& rhs);
-				const char *__type_name;
-				protected:
-				type_info(const char *name): __type_name(name) { }
-				public:
-				const char* name() const { return __type_name; }
-	};
-}
 
 extern "C" void __cxa_throw(void*, std::type_info*, void(*)(void*));
 extern "C" void __cxa_rethrow();
@@ -200,188 +166,6 @@ void exception_cleanup(_Unwind_Reason_Code reason,
 }
 
 }
-
-using namespace std;
-
-
-static BOOL isKindOfClass(Class thrown, Class type)
-{
-	do
-	{
-		if (thrown == type)
-		{
-			return YES;
-		}
-		thrown = class_getSuperclass(thrown);
-	} while (Nil != thrown);
-
-	return NO;
-}
-
-
-
-
-namespace gnustep
-{
-	namespace libobjc
-	{
-		/**
-		 * Superclass for the type info for Objective-C exceptions.
-		 */
-		struct OBJC_PUBLIC __objc_type_info : std::type_info
-		{
-			/**
-			 * Constructor that sets the name.
-			 */
-			__objc_type_info(const char *name) : type_info(name) {}
-			/**
-			 * Helper function used by libsupc++ and libcxxrt to determine if
-			 * this is a pointer type.  If so, catches automatically
-			 * dereference the pointer to the thrown pointer in
-			 * `__cxa_begin_catch`.
-			 */
-			virtual bool __is_pointer_p() const { return true; }
-			/**
-			 * Helper function used by libsupc++ and libcxxrt to determine if
-			 * this is a function pointer type.  Irrelevant for our purposes.
-			 */
-			virtual bool __is_function_p() const { return false; }
-			/**
-			 * Catch handler.  This is used in the C++ personality function.
-			 * `thrown_type` is the type info of the thrown object, `this` is
-			 * the type info at the catch site.  `thrown_object` is a pointer
-			 * to a pointer to the thrown object and may be adjusted by this
-			 * function.
-			 */
-			virtual bool __do_catch(const type_info *thrown_type,
-			                        void **thrown_object,
-			                        unsigned) const
-			{
-				assert(0);
-				return false;
-			};
-			/**
-			 * Function used for `dynamic_cast` between two C++ class types in
-			 * libsupc++ and libcxxrt.
-			 *
-			 * This should never be called on Objective-C types.
-			 */
-			virtual bool __do_upcast(
-			                const __class_type_info *target,
-			                void **thrown_object) const
-			{
-				return false;
-			};
-		};
-		/**
-		 * Singleton type info for the `id` type.
-		 */
-		struct OBJC_PUBLIC __objc_id_type_info : __objc_type_info
-		{
-			/**
-			 * The `id` type is mangled to `@id`, which is not a valid mangling
-			 * of anything else.
-			 */
-			__objc_id_type_info() : __objc_type_info("@id") {};
-			virtual ~__objc_id_type_info();
-			virtual bool __do_catch(const type_info *thrownType,
-			                        void **obj,
-			                        unsigned outer) const;
-		};
-		struct OBJC_PUBLIC __objc_class_type_info : __objc_type_info
-		{
-			virtual ~__objc_class_type_info();
-			virtual bool __do_catch(const type_info *thrownType,
-			                        void **obj,
-			                        unsigned outer) const;
-		};
-	}
-
-	static inline id dereference_thrown_object_pointer(void** obj) {
-		/* libc++-abi does not have  __is_pointer_p and won't do the double dereference 
-		 * required to get the object pointer. We need to do it ourselves if we have
-		 * caught an exception with libc++'s exception class. */
-#ifndef __MINGW32__
-		 if (cxx_exception_class == llvm_cxx_exception_class) {
-			 return **(id**)obj;
-		 }
-		 return *(id*)obj;
-#else
-#ifdef _LIBCPP_VERSION
-		return **(id**)obj;
-#else
-		return *(id*)obj;
-#endif // _LIBCPP_VERSION
-#endif // __MINGW32__
-	 }
-};
-
-
-static bool AppleCompatibleMode = true;
-extern "C" int objc_set_apple_compatible_objcxx_exceptions(int newValue)
-{
-	bool old = AppleCompatibleMode;
-	AppleCompatibleMode = newValue;
-	return old;
-}
-
-gnustep::libobjc::__objc_class_type_info::~__objc_class_type_info() {}
-gnustep::libobjc::__objc_id_type_info::~__objc_id_type_info() {}
-bool gnustep::libobjc::__objc_class_type_info::__do_catch(const type_info *thrownType,
-                                                          void **obj,
-                                                          unsigned outer) const
-{
-	id thrown = nullptr;
-	bool found = false;
-	// Id throw matches any ObjC catch.  This may be a silly idea!
-	if (dynamic_cast<const __objc_id_type_info*>(thrownType)
-	    || (AppleCompatibleMode && 
-	        dynamic_cast<const __objc_class_type_info*>(thrownType)))
-	{
-		thrown = dereference_thrown_object_pointer(obj);
-		// nil only matches id catch handlers in Apple-compatible mode, or when thrown as an id
-		if (0 == thrown)
-		{
-			return false;
-		}
-		// Check whether the real thrown object matches the catch type.
-		found = isKindOfClass(object_getClass(thrown),
-		                      (Class)objc_getClass(name()));
-	}
-	else if (dynamic_cast<const __objc_class_type_info*>(thrownType))
-	{
-		thrown = dereference_thrown_object_pointer(obj);
-		found = isKindOfClass((Class)objc_getClass(thrownType->name()),
-		                      (Class)objc_getClass(name()));
-	}
-	if (found)
-	{
-		*obj = (void*)thrown;
-	}
-
-	return found;
-};
-
-bool gnustep::libobjc::__objc_id_type_info::__do_catch(const type_info *thrownType,
-                                                       void **obj,
-                                                       unsigned outer) const
-{
-	// Id catch matches any ObjC throw
-	if (dynamic_cast<const __objc_class_type_info*>(thrownType))
-	{
-		*obj = dereference_thrown_object_pointer(obj);
-		DEBUG_LOG("gnustep::libobjc::__objc_id_type_info::__do_catch caught 0x%x\n", *obj);
-		return true;
-	}
-	if (dynamic_cast<const __objc_id_type_info*>(thrownType))
-	{
-		*obj = dereference_thrown_object_pointer(obj);
-		DEBUG_LOG("gnustep::libobjc::__objc_id_type_info::__do_catch caught 0x%x\n", *obj);
-		return true;
-	}
-	DEBUG_LOG("gnustep::libobjc::__objc_id_type_info::__do_catch returning false\n");
-	return false;
-};
 
 /**
  * Public interface to the Objective-C++ exception mechanism
@@ -490,7 +274,6 @@ BEGIN_PERSONALITY_FUNCTION(test_eh_personality)
  * personality function, allowing us to inspect a C++ exception that is in a
  * known state.
  */
-#ifndef __MINGW32__
 extern "C" void test_cxx_eh_implementation()
 {
 	if (done_setup)
@@ -508,21 +291,4 @@ extern "C" void test_cxx_eh_implementation()
 	}
 	assert(caught);
 }
-#else
-static void eh_cleanup(void *exception)
-{
-	DEBUG_LOG("eh_cleanup: Releasing 0x%x\n", *(id*)exception);
-	objc_release(*(id*)exception);
-}
 
-extern "C"
-OBJC_PUBLIC
-void objc_exception_throw(id object)
-{
-	id *exc = (id *)__cxa_allocate_exception(sizeof(id));
-	*exc = object;
-	objc_retain(object);
-	DEBUG_LOG("objc_exception_throw: Throwing 0x%x\n", *exc);
-	__cxa_throw(exc, & __objc_id_type_info, eh_cleanup);
-}
-#endif
